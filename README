@@ -1,0 +1,17 @@
+========
+atdriver
+========
+
+atdriver is a linux kernel driver and tty line discipline that sends and
+receives sms over AT commands.
+
+Build
+=====
+
+Simply run "make".
+
+The resulting objects can be find in ./build :
+	- ./build/attest/attest is a test application
+	- ./build/simulAT/simulAT is a AT command device simulator for sending
+	  and receiving sms
+	- ./build/atdriver/at.ko is the actual device driver

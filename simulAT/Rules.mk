@@ -1,0 +1,41 @@
+SIMULAT_FILE := $(dir $(lastword $(MAKEFILE_LIST)))
+SIMULAT_DIR := $(SIMULAT_FILE:%/=%)
+
+include $(SIMULAT_DIR)/Conf.mk
+
+SIMULAT_EXEC := $(EXEC)
+SIMULAT_SRC := $(SRC)
+SIMULAT_OBJ := $(SIMULAT_SRC:%.c=%.o)
+SIMULAT_DEP := $(SIMULAT_SRC:%.c=%.d)
+
+ifneq ($(SIMULAT_DIR),.)
+SIMULAT_DESTDIR := $(DESTDIR)/$(SIMULAT_DIR)
+else
+SIMULAT_DESTDIR := $(DESTDIR)
+endif
+SIMULAT_ABSDESTDIR := $(abspath $(SIMULAT_DESTDIR))
+
+$(SIMULAT_DESTDIR)/$(SIMULAT_EXEC): $(SIMULAT_DESTDIR)/$(SIMULAT_OBJ)
+	$(CC) -o $@ $< $(LDFLAGS)
+
+$(SIMULAT_DESTDIR)/%.o: $(SIMULAT_DIR)/%.c
+	$(CC) -o $@ -c $< $(CFLAGS) -MMD
+
+$(SIMULAT_ABSDESTDIR):
+	mkdir -p $(SIMULAT_ABSDESTDIR)
+
+destdir-$(EXEC): $(SIMULAT_ABSDESTDIR)
+
+.PHONY: clean-$(SIMULAT_EXEC) mrproper-$(SIMULAT_EXEC)
+
+clean-$(SIMULAT_EXEC):
+	rm -f $(SIMULAT_ABSDESTDIR)/*.o
+	rm -f $(SIMULAT_ABSDESTDIR)/*.d
+
+mrproper-$(SIMULAT_EXEC): clean
+ifneq ($(SIMULAT_ABSDESTDIR),$(realpath $(SIMULAT_DIR)))
+	rm -rf $(SIMULAT_ABSDESTDIR)
+else
+	rm -f $(SIMULAT_ABSDESTDIR)/$(SIMULAT_EXEC)
+endif
+
