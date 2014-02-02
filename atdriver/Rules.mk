@@ -1,18 +1,16 @@
-ATDRIVER_FILE := $(dir $(lastword $(MAKEFILE_LIST)))
-ATDRIVER_DIR := $(ATDRIVER_FILE:%/=%)
+ATDRIVER_DIR := $(CURDIR)
+
 KERNDIR ?= /lib/modules/$(shell uname -r)/build
 
-include $(ATDRIVER_DIR)/Conf.mk
+include $(ATDRIVER_DIR)/Files.mk
 
 ATDRIVER_EXEC := $(EXEC)
 ATDRIVER_SRC := $(SRC)
-ifneq ($(ATDRIVER_DIR),.)
-KBUILD := $(DESTDIR)/$(ATDRIVER_DIR)
-else
-KBUILD := $(DESTDIR)
-endif
-ABSKBUILD := $(abspath $(DESTDIR)/$(ATDRIVER_DIR))
+KBUILD := $(DST)
+ABSKBUILD := $(abspath $(KBUILD))
 
+build-$(TARGET): destdir-$(ATDRIVER_EXEC)	\
+				$(KBUILD)/$(ATDRIVER_EXEC) $(BUILD_DEP)
 
 $(KBUILD)/$(ATDRIVER_EXEC): $(ATDRIVER_SRC:%=$(ATDRIVER_DIR)/%)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
@@ -26,7 +24,7 @@ endif
 $(ABSKBUILD):
 	mkdir -p $(ABSKBUILD)
 
-destdir-$(EXEC): $(ABSKBUILD)
+destdir-$(ATDRIVER_EXEC): $(ABSKBUILD)
 
 .PHONY: clean-$(ATDRIVER_EXEC) mrproper-$(ATDRIVER_EXEC)
 
@@ -41,3 +39,5 @@ mrproper-$(ATDRIVER_EXEC): clean-$(ATDRIVER_EXEC)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm -rf $(ABSKBUILD)
 endif
+
+-include $(RULESMK_DEP)

@@ -1,21 +1,21 @@
-ATTEST_FILE := $(dir $(lastword $(MAKEFILE_LIST)))
-ATTEST_DIR := $(ATTEST_FILE:%/=%)
+ATTEST_DIR := $(CURDIR)
 
-include $(ATTEST_DIR)/Conf.mk
+include $(ATTEST_DIR)/Files.mk
 
+#Fix some variables
 ATTEST_EXEC := $(EXEC)
 ATTEST_SRC := $(SRC)
-ATTEST_OBJ := $(ATTEST_SRC:%.c=%.o)
-ATTEST_DEP := $(ATTEST_SRC:%.c=%.d)
-ifneq ($(ATTEST_DIR),.)
-ATTEST_DESTDIR := $(DESTDIR)/$(ATTEST_DIR)
-else
-ATTEST_DESTDIR := $(DESTDIR)
-endif
+ATTEST_OBJ := $(OBJ)
+ATTEST_DEP := $(DEPENDS)
+ATTEST_DESTDIR := $(DST)
 ATTEST_ABSDESTDIR := $(abspath $(ATTEST_DESTDIR))
 
 
-$(ATTEST_DESTDIR)/$(ATTEST_EXEC): $(ATTEST_DESTDIR)/$(ATTEST_OBJ)
+build-$(TARGET): destdir-$(ATTEST_EXEC)		\
+				$(ATTEST_DESTDIR)/$(ATTEST_EXEC) $(DEPS)
+
+
+$(ATTEST_DESTDIR)/$(ATTEST_EXEC): $(ATTEST_OBJ)
 	$(CC) -o $@ $< $(LDFLAGS)
 
 $(ATTEST_DESTDIR)/%.o: $(ATTEST_DIR)/%.c
@@ -24,7 +24,7 @@ $(ATTEST_DESTDIR)/%.o: $(ATTEST_DIR)/%.c
 $(ATTEST_ABSDESTDIR):
 	mkdir -p $(ATTEST_ABSDESTDIR)
 
-destdir-$(EXEC): $(ATTEST_ABSDESTDIR)
+destdir-$(ATTEST_EXEC): $(ATTEST_ABSDESTDIR)
 
 .PHONY: clean-$(ATTEST_EXEC) mrproper-$(ATTEST_EXEC)
 
@@ -38,3 +38,6 @@ ifneq ($(ATTEST_ABSDESTDIR),$(realpath $(ATTEST_DIR)))
 else
 	rm -f $(ATTEST_EXEC)
 endif
+
+-include $(RULESMK_DEP)
+-include $(ATTEST_DEP)

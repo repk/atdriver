@@ -1,36 +1,36 @@
-CC := gcc
-LD := gcc
-MAKE := make
+CONF ?= default
 
-CFLAGS := -W -Wall
-LDFLAGS :=
+include Conf.$(CONF).mk
+include Files.mk
 
-DEPS := simulAT/simulAT test/attest atdriver/at.ko
-DEPSDIR := $(dir $(DEPS))
-DEPSEXEC := $(notdir $(DEPS))
+.SUFFIXES:
+	MAKEFLAGS += --no-builtin-rules --no-builtin-variables \
+		     --warn-undefined-variables
 
-LDFLAGS := $(LDFLAGS)
+CURFILE = $(dir $(lastword $(MAKEFILE_LIST)))
+CURDIR = $(CURFILE:%/=%)
 
-DESTDIR := ./build
+OBJ = $(DESTDIR)/$(CURDIR)/$(SRC:.c=.o)
+DEPENDS = $(OBJ:%.o=.d)
 
-RULESMK_DEP := $(DEPSDIR:%=%Rules.mk)
-BUILD_DEP := $(DEPS:%=$(DESTDIR)/%)
-CLEAN_DEP := $(DEPSEXEC:%=clean-%)
-MRPROPER_DEP := $(DEPSEXEC:%=mrproper-%)
-DESTDIR_DEP := $(DEPSEXEC:%=destdir-%)
+DEPSDIR = $(dir $(DEPS))
+DEPSEXEC = $(notdir $(DEPS))
 
+DST = $(patsubst %/.,%, $(DESTDIR)/$(CURDIR))
+TARGET = $(patsubst ./%,%, $(CURDIR)/$(EXEC))
 
-all: _all
+RULESMK_DEP = $(DEPSDIR:%=%Rules.mk)
+BUILD_DEP = $(DEPS:%=build-%)
+CLEAN_DEP = $(DEPSEXEC:%=clean-%)
+MRPROPER_DEP = $(DEPSEXEC:%=mrproper-%)
+DESTDIR_DEP = $(DEPSEXEC:%=destdir-%)
 
-include $(RULESMK_DEP)
-include Rules.mk
-
-_all: destdir $(BUILD_DEP)
-
-destdir: destdir-$(EXEC) $(DESTDIR_DEP)
+all: build-$(TARGET)
 
 .PHONY: clean mrproper
 
-clean: $(CLEAN_DEP) clean-$(EXEC)
+clean: clean-$(EXEC)
 
-mrproper: $(MRPROPER_DEP) mrproper-$(EXEC)
+mrproper: mrproper-$(EXEC)
+
+include Rules.mk
