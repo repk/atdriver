@@ -9,8 +9,8 @@ SIMULAT_DEP := $(DEPENDS)
 SIMULAT_DESTDIR := $(DST)
 SIMULAT_ABSDESTDIR := $(abspath $(SIMULAT_DESTDIR))
 
-build-$(TARGET): destdir-$(SIMULAT_EXEC)		\
-			$(SIMULAT_DESTDIR)/$(SIMULAT_EXEC) $(BUILD_DEP)
+build-$(TARGET): destdir-$(TARGET) $(SIMULAT_DESTDIR)/$(SIMULAT_EXEC)	\
+			 $(BUILD_DEP)
 
 $(SIMULAT_DESTDIR)/$(SIMULAT_EXEC): $(SIMULAT_OBJ)
 	$(CC) -o $@ $< $(LDFLAGS)
@@ -21,15 +21,15 @@ $(SIMULAT_DESTDIR)/%.o: $(SIMULAT_DIR)/%.c
 $(SIMULAT_ABSDESTDIR):
 	mkdir -p $(SIMULAT_ABSDESTDIR)
 
-destdir-$(EXEC): $(SIMULAT_ABSDESTDIR)
+destdir-$(TARGET): $(SIMULAT_ABSDESTDIR)
 
 .PHONY: clean-$(SIMULAT_EXEC) mrproper-$(SIMULAT_EXEC)
 
-clean-$(SIMULAT_EXEC):
+clean-$(TARGET):
 	rm -f $(SIMULAT_ABSDESTDIR)/*.o
 	rm -f $(SIMULAT_ABSDESTDIR)/*.d
 
-mrproper-$(SIMULAT_EXEC): clean
+mrproper-$(TARGET): clean
 ifneq ($(SIMULAT_ABSDESTDIR),$(realpath $(SIMULAT_DIR)))
 	rm -rf $(SIMULAT_ABSDESTDIR)
 else

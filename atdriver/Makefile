@@ -30,17 +30,17 @@ TARGET = $(patsubst ./%,%, $(CURDIR)/$(EXEC))
 
 RULESMK_DEP = $(DEPSDIR:%=%Rules.mk)
 BUILD_DEP = $(DEPS:%=build-%)
-CLEAN_DEP = $(DEPSEXEC:%=clean-%)
-MRPROPER_DEP = $(DEPSEXEC:%=mrproper-%)
-DESTDIR_DEP = $(DEPSEXEC:%=destdir-%)
+CLEAN_DEP = $(DEPS:%=clean-%)
+MRPROPER_DEP = $(DEPS:%=mrproper-%)
+DESTDIR_DEP = $(DEPS:%=destdir-%)
 
 default: build-$(TARGET)
 
 .PHONY: clean mrproper
 
-clean: clean-$(EXEC)
+clean: clean-$(TARGET)
 
-mrproper: mrproper-$(EXEC)
+mrproper: mrproper-$(TARGET)
 
 include Rules.mk
 

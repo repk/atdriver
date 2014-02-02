@@ -9,8 +9,7 @@ ATDRIVER_SRC := $(SRC)
 KBUILD := $(DST)
 ABSKBUILD := $(abspath $(KBUILD))
 
-build-$(TARGET): destdir-$(ATDRIVER_EXEC)	\
-				$(KBUILD)/$(ATDRIVER_EXEC) $(BUILD_DEP)
+build-$(TARGET): destdir-$(TARGET) $(KBUILD)/$(ATDRIVER_EXEC) $(BUILD_DEP)
 
 $(KBUILD)/$(ATDRIVER_EXEC): $(ATDRIVER_SRC:%=$(ATDRIVER_DIR)/%)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
@@ -24,18 +23,18 @@ endif
 $(ABSKBUILD):
 	mkdir -p $(ABSKBUILD)
 
-destdir-$(ATDRIVER_EXEC): $(ABSKBUILD)
+destdir-$(TARGET): $(ABSKBUILD)
 
 .PHONY: clean-$(ATDRIVER_EXEC) mrproper-$(ATDRIVER_EXEC)
 
-clean-$(ATDRIVER_EXEC):
+clean-$(TARGET):
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm -rf $(ABSKBUILD)/*
 else
 	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) clean
 endif
 
-mrproper-$(ATDRIVER_EXEC): clean-$(ATDRIVER_EXEC)
+mrproper-$(TARGET): clean-$(TARGET)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm -rf $(ABSKBUILD)
 endif

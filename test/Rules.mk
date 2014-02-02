@@ -11,8 +11,7 @@ ATTEST_DESTDIR := $(DST)
 ATTEST_ABSDESTDIR := $(abspath $(ATTEST_DESTDIR))
 
 
-build-$(TARGET): destdir-$(ATTEST_EXEC)		\
-				$(ATTEST_DESTDIR)/$(ATTEST_EXEC) $(DEPS)
+build-$(TARGET): destdir-$(TARGET) $(ATTEST_DESTDIR)/$(ATTEST_EXEC) $(DEPS)
 
 
 $(ATTEST_DESTDIR)/$(ATTEST_EXEC): $(ATTEST_OBJ)
@@ -24,15 +23,15 @@ $(ATTEST_DESTDIR)/%.o: $(ATTEST_DIR)/%.c
 $(ATTEST_ABSDESTDIR):
 	mkdir -p $(ATTEST_ABSDESTDIR)
 
-destdir-$(ATTEST_EXEC): $(ATTEST_ABSDESTDIR)
+destdir-$(TARGET): $(ATTEST_ABSDESTDIR)
 
 .PHONY: clean-$(ATTEST_EXEC) mrproper-$(ATTEST_EXEC)
 
-clean-$(ATTEST_EXEC):
+clean-$(TARGET):
 	rm -f $(ATTEST_ABSDESTDIR)/*.o
 	rm -f $(ATTEST_ABSDESTDIR)/*.d
 
-mrproper-$(ATTEST_EXEC): clean
+mrproper-$(TARGET): clean
 ifneq ($(ATTEST_ABSDESTDIR),$(realpath $(ATTEST_DIR)))
 	rm -rf $(ATTEST_ABSDESTDIR)
 else

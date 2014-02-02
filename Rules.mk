@@ -14,13 +14,13 @@ build-$(TARGET): destdir-$(EXEC) $(BUILD_DEP)
 $(DESTDIR):
 	mkdir -p $(DESTDIR)
 
-destdir-$(EXEC): $(DESTDIR)
+destdir-$(TARGET): $(DESTDIR)
 
-.PHONY: clean-$(EXEC) mrproper-$(EXEC)
+.PHONY: clean-$(TARGET) mrproper-$(TARGET)
 
-clean-$(EXEC): $(_CLEAN_DEP)
+clean-$(TARGET): $(_CLEAN_DEP)
 
-mrproper-$(EXEC): clean $(MRPROPER_DEP)
+mrproper-$(TARGET): clean $(MRPROPER_DEP)
 ifneq ($(abspath $(DESTDIR)),$(realpath $(_DIR)))
 	rm -rf $(DESTDIR)
 endif
