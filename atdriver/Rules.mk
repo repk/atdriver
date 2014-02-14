@@ -16,7 +16,8 @@ $(KBUILD)/$(ATDRIVER_EXEC): $(ATDRIVER_SRC:%=$(ATDRIVER_DIR)/%)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	cp $^ $(KBUILD)/
 endif
-	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) KFLAGS="${KFLAGS}" modules
+	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) ${KMFLAGS}	\
+		KFLAGS="${KFLAGS}" modules
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm $(ATDRIVER_SRC:%=$(KBUILD)/%)
 endif
@@ -32,7 +33,7 @@ clean-$(TARGET):
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm -rf $(ABSKBUILD)/*
 else
-	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) clean
+	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) ${KMFLAGS} clean
 endif
 
 mrproper-$(TARGET): clean-$(TARGET)

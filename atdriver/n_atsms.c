@@ -7,6 +7,8 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 
+/* copy_to_user */
+#include <linux/uaccess.h>
 
 #include "n_atsms.h"
 
@@ -445,7 +447,8 @@ static void atsld_msg(struct tty_struct *tty, struct atsms *ats)
 {
 	struct atsms_buf *b = &ats->ats_buf;
 
-	ATSMSLD_DBGMSG("Message received(%lu) : %.*s\n", b->atsb_count,
+	ATSMSLD_DBGMSG("Message received(%lu) : %.*s\n",
+			(unsigned long)b->atsb_count,
 			(int)b->atsb_count, b->atsb_rxbuf);
 
 	/* Notification messages */
