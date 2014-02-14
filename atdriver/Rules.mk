@@ -9,13 +9,14 @@ ATDRIVER_SRC := $(SRC)
 KBUILD := $(DST)
 ABSKBUILD := $(abspath $(KBUILD))
 
+
 build-$(TARGET): destdir-$(TARGET) $(KBUILD)/$(ATDRIVER_EXEC) $(BUILD_DEP)
 
 $(KBUILD)/$(ATDRIVER_EXEC): $(ATDRIVER_SRC:%=$(ATDRIVER_DIR)/%)
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	cp $^ $(KBUILD)/
 endif
-	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) modules
+	$(MAKE) -C $(KERNDIR) M=$(realpath $(KBUILD)) KFLAGS="${KFLAGS}" modules
 ifneq ($(ABSKBUILD),$(realpath $(ATDRIVER_DIR)))
 	rm $(ATDRIVER_SRC:%=$(KBUILD)/%)
 endif

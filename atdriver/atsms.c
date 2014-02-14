@@ -11,9 +11,6 @@
 
 #include "n_atsms.h"
 
-
-#define ATSMS_DBG 1
-
 #ifdef ATSMS_DBG
 #define ATSMS_DBGMSG(...) printk(KERN_ALERT __VA_ARGS__)
 #else

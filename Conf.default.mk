@@ -4,5 +4,6 @@ MAKE := make
 
 CFLAGS := -W -Wall
 LDFLAGS :=
+KFLAGS :=
 
 DESTDIR := ./build

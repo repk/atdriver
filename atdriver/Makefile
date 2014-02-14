@@ -4,6 +4,7 @@
 ifneq ($(KERNELRELEASE),)
 	obj-m := at.o
 	at-y := atsms.o n_atsms.o
+	ccflags-y := $(KFLAGS)
 
 # Here we are at the first call
 else
