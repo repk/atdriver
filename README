@@ -8,10 +8,68 @@ receives sms over AT commands.
 Build
 =====
 
-Simply run "make".
+Simply run :
+$ make
 
 The resulting objects can be find in ./build :
 	- ./build/attest/attest is a test application
 	- ./build/simulAT/simulAT is a AT command device simulator for sending
 	  and receiving sms
 	- ./build/atdriver/at.ko is the actual device driver
+
+Compilation Configuration
+=========================
+
+All config for compilation can be found in Conf/ directory. You can make a
+config file here for your target, for example <target>.mk, then to compile
+it you have to run :
+
+$ make CONF=<target>
+
+Configuration var :
+-------------------
+
+- CC is the compiler used to make objects
+- CFLAGS are compiler flags
+- LD is the linker used to link objects
+- LDFLAGS are linker flags
+- MAKE is the make binary
+- DESTDIR is the directory where objects are compiled
+- KFLAGS these are compiler flags passed when building in the kernel
+- KMFLAGS are flags passed to the kernel makefiles
+
+
+at.ko
+=====
+
+at.ko should be built in ./build/atdriver/at.ko this is the proper kernel
+module. This provides line discipline to send sms.
+
+To use it you simply have to londe the kernel module :
+
+$ insmod at.ko
+
+attest
+======
+
+Should be built in ./build/attest/attest. This provides unitary tests for at.ko
+kernel tty line discipline. You should run it this way :
+
+$ ./attest <tty>
+
+Where <tty> is the gsm device (can be a gsm simulator such as the one provided
+with these sources named simulAT).
+
+
+simulAT
+=======
+
+This is a sms gsm device simulator, this will create a virtual tty through where
+you can send very basic AT commands.
+
+This is often used with attest to test the at line discipline. Run it this way
+
+$ ./simulAT
+
+This should print the created virtual tty number. Then you can use
+./attest <the_previous_tty_nb> in order to test the at.ko driver.
