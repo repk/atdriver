@@ -1,6 +1,7 @@
-CONF ?= default
+CONFDIR	?= ./Conf
+CONF	?= default
 
-include Conf.$(CONF).mk
+include $(CONFDIR)/$(CONF).mk
 include Files.mk
 
 .SUFFIXES:

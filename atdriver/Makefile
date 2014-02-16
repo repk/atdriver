@@ -8,9 +8,10 @@ ifneq ($(KERNELRELEASE),)
 
 # Here we are at the first call
 else
-CONF ?= default
+CONFDIR ?= ../Conf
+CONF	?= default
 
-include Conf.$(CONF).mk
+include $(CONFDIR)/$(CONF).mk
 include Files.mk
 
 .SUFFIXES:
