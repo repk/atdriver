@@ -12,6 +12,8 @@
 
 #include "n_atsms.h"
 
+#define STRLEN(s) (sizeof(s) - 1)
+
 #define ATS_NUMLEN 12
 #define ATS_SMSLEN 160
 
@@ -26,6 +28,8 @@ struct atsms_buf {
 	char atsb_rxbuf[ATSMSBUF_LEN];
 };
 
+
+
 #define ATSRM_SMSLEN_GET(a) (sizeof((a)->atsrm_num) + 1 + (a)->atsrm_len)
 struct atsms_rcvmsg {
 	struct list_head atsrm_next;
@@ -34,15 +38,21 @@ struct atsms_rcvmsg {
 	size_t atsrm_len; /* Total sms text lenght without number */
 };
 
+
+
 struct atsms_cmd {
 	struct list_head atsc_next;
 	size_t atsc_len;
 	char atsc_data[];
 };
 
+
+
 #define ATSRB_INIT		0
 #define ATSRB_SMS_FETCHED	1
 #define ATSRB_SMS_SYNC		2
+
+
 /**
  * XXX Do we really need the following structure
  */
@@ -59,11 +69,14 @@ struct atsms_rcvbox {
 #define ATSMS_STATE_NUM		3
 #define ATSMS_STATE_SMSG	4
 #define ATSMS_STATE_RMSG	5
+#define ATSMS_STATE_PIN		6
 
 #define ATSMS_MODE_UNDEF	0
 #define ATSMS_MODE_SMSTEXT	1
 
 #define ATSMS_NOERROR		0
+
+
 struct atsms {
 	struct atsms_buf	ats_buf;
 	wait_queue_head_t	ats_queue;
@@ -73,6 +86,8 @@ struct atsms {
 	unsigned int		ats_mode;
 	int			ats_error;
 };
+
+
 
 #define ATSMS_ERROR_TOKEN	"+CME ERROR:"
 #define ATSMS_SMSENTRY_TOKEN	"+CMGL:"
@@ -90,6 +105,8 @@ static inline struct atsms * atsms_alloc_struct(void)
 	return ats;
 }
 
+
+
 /**
  * Free a atsms structure
  */
@@ -97,6 +114,7 @@ static inline void atsms_free_struct(struct atsms *ats)
 {
 	kfree(ats);
 }
+
 
 
 /**
@@ -111,6 +129,7 @@ static inline struct atsms_rcvmsg * atsms_alloc_rcsmsg(void)
 }
 
 
+
 /**
  * Free sms structure
  */
@@ -121,6 +140,8 @@ static inline void atsms_free_rcvmsg(struct atsms_rcvmsg *sms)
 
 #define list_tail_entry(ptr, type, member) \
 	list_entry((ptr)->prev, type, member)
+
+
 
 /**
  * Fill current sms
@@ -149,6 +170,7 @@ static inline int atsld_sms_fill(struct atsms *ats, struct atsms_buf *b)
 
 	return len;
 }
+
 
 
 /**
@@ -194,7 +216,7 @@ static inline int atsld_wait(struct atsms *ats)
 	int res;
 
 	res = wait_event_interruptible_timeout(ats->ats_queue,
-			ats->ats_state ==  ATSMS_STATE_OK, ATSMS_EVENT_TIMEOUT);
+			ats->ats_state == ATSMS_STATE_OK, ATSMS_EVENT_TIMEOUT);
 
 	if(res < 0) {
 		return -EINTR;
@@ -204,6 +226,8 @@ static inline int atsld_wait(struct atsms *ats)
 
 	return ats->ats_error;
 }
+
+
 
 /**
  * Wait for new sms to come
@@ -229,6 +253,7 @@ static inline int atsld_wait_sms(struct atsms *ats)
 }
 
 
+
 /**
  * Wake up waiting ats devices
  */
@@ -238,6 +263,8 @@ static inline void atsld_wakeup(struct atsms *ats, int error)
 	ats->ats_error = error;
 	wake_up_interruptible(&ats->ats_queue);
 }
+
+
 
 /**
  * Wake up reader queues
@@ -255,6 +282,8 @@ static inline void atsld_wakeup_sms(struct atsms *ats, int error)
 	else
 		wake_up_interruptible(&ats->ats_rdqueue);
 }
+
+
 
 /**
  * Add newly received sms index in cmdlist
@@ -284,17 +313,17 @@ static inline int atsld_sms_add_request(struct atsms *ats, struct atsms_buf *b)
 
 	len = b->atsb_count  - (idx - b->atsb_rxbuf);
 
-	ac = kmalloc(sizeof(*ac) + len + sizeof("+CMGR="), GFP_KERNEL);
+	ac = kmalloc(sizeof(*ac) + len + 1 + STRLEN("+CMGR="), GFP_KERNEL);
 
 	p = ac->atsc_data;
 
-	memcpy(p, "+CMGR=", sizeof("+CMGR=") - 1);
-	p += sizeof("+CMGR=") - 1;
+	memcpy(p, "+CMGR=", STRLEN("+CMGR="));
+	p += STRLEN("+CMGR=");
 
 	memcpy(p, idx, len);
 	p[len] = ';';
 
-	ac->atsc_len = len + sizeof("+CMGR=");
+	ac->atsc_len = len + 1 + STRLEN("+CMGR=");
 
 	ATSMSLD_DBGMSG("Adding newly received message (%zu) %.*s", len,
 			(int)len, idx);
@@ -306,6 +335,7 @@ static inline int atsld_sms_add_request(struct atsms *ats, struct atsms_buf *b)
 
 	return 0;
 }
+
 
 
 /**
@@ -324,15 +354,19 @@ static inline int atsld_send(struct tty_struct *tty, char const *msg,
 	return -ENOBUFS;
 }
 
+
+
 /**
  * Test that AT device is up listenning and in good shape
  */
 static inline int atsld_conntest(struct tty_struct *tty, struct atsms *ats)
 {
-	atsld_send(tty, "AT\r\n", sizeof("AT\r\n") - 1);
+	atsld_send(tty, "AT\r\n", STRLEN("AT\r\n"));
 
 	return atsld_wait(ats);
 }
+
+
 
 /**
  * Go into sms text mode
@@ -341,7 +375,7 @@ static inline int atsld_mode_smstext(struct tty_struct *tty, struct atsms *ats)
 {
 	int ret;
 
-	atsld_send(tty, "AT+CMGF=1\r\n", sizeof("AT+CMGF=1\r\n") - 1);
+	atsld_send(tty, "AT+CMGF=1\r\n", STRLEN("AT+CMGF=1\r\n"));
 	ats->ats_state = ATSMS_STATE_CHANGE_MODE;
 
 	ret = atsld_wait(ats);
@@ -352,6 +386,7 @@ static inline int atsld_mode_smstext(struct tty_struct *tty, struct atsms *ats)
 }
 
 
+
 /**
  * Check if message from AT device is an error
  *
@@ -360,7 +395,7 @@ static inline int atsld_mode_smstext(struct tty_struct *tty, struct atsms *ats)
  */
 static inline int atsld_rsp_is_error(struct atsms_buf *b)
 {
-	size_t errlen = sizeof(ATSMS_ERROR_TOKEN) - 1;
+	size_t errlen = STRLEN(ATSMS_ERROR_TOKEN);
 
 	if(b->atsb_count < errlen)
 		return 0;
@@ -370,6 +405,8 @@ static inline int atsld_rsp_is_error(struct atsms_buf *b)
 	return 1;
 }
 
+
+
 /**
  * Check if message from AT device is a new sms entry
  *
@@ -377,7 +414,7 @@ static inline int atsld_rsp_is_error(struct atsms_buf *b)
  */
 static inline int atsld_rsp_is_smsentry(struct atsms_buf *b)
 {
-	size_t len = sizeof(ATSMS_SMSENTRY_TOKEN) - 1;
+	size_t len = STRLEN(ATSMS_SMSENTRY_TOKEN);
 
 	if(b->atsb_count < len)
 		return 0;
@@ -387,6 +424,8 @@ static inline int atsld_rsp_is_smsentry(struct atsms_buf *b)
 	return 1;
 }
 
+
+
 /**
  * Check if message from AT device has accepted the previsous message
  *
@@ -394,7 +433,7 @@ static inline int atsld_rsp_is_smsentry(struct atsms_buf *b)
  */
 static inline int atsld_rsp_is_ok(struct atsms_buf *b)
 {
-	size_t len = sizeof("OK") - 1;
+	size_t len = STRLEN("OK");
 
 	if(b->atsb_count != len)
 		return 0;
@@ -403,6 +442,8 @@ static inline int atsld_rsp_is_ok(struct atsms_buf *b)
 
 	return 1;
 }
+
+
 
 /**
  * Check if message from AT device is a sms prompt
@@ -429,7 +470,7 @@ static inline int atsld_rsp_is_smsprompt(struct atsms_buf *b)
  */
 static inline int atsld_rsp_is_smsnotif(struct atsms_buf *b)
 {
-	size_t len = sizeof("+CMTI: ") - 1;
+	size_t len = STRLEN("+CMTI: ");
 
 	if(b->atsb_count <= len)
 		return 0;
@@ -438,6 +479,7 @@ static inline int atsld_rsp_is_smsnotif(struct atsms_buf *b)
 
 	return 1;
 }
+
 
 
 /**
@@ -462,6 +504,7 @@ static void atsld_msg(struct tty_struct *tty, struct atsms *ats)
 	case ATSMS_STATE_INIT:
 	case ATSMS_STATE_CHANGE_MODE:
 	case ATSMS_STATE_SMSG:
+	case ATSMS_STATE_PIN:
 		if(atsld_rsp_is_ok(b))
 			atsld_wakeup(ats, ATSMS_NOERROR);
 		else if(atsld_rsp_is_error(b))
@@ -491,6 +534,8 @@ static void atsld_msg(struct tty_struct *tty, struct atsms *ats)
 	b->atsb_count = 0;
 }
 
+
+
 /**
  * Parse character
  */
@@ -519,6 +564,8 @@ static inline void atsld_receive_char(struct tty_struct *tty,
 	}
 }
 
+
+
 /**
  * Go fetch for gsm device stored sms
  */
@@ -526,11 +573,12 @@ static inline int atsld_stored_sms_fetch(struct tty_struct *tty,
 		struct atsms *ats)
 {
 	ats->ats_state = ATSMS_STATE_RMSG;
-	atsld_send(tty, "AT+CMGL=\"ALL\"\r\n",
-			sizeof("AT+CMGL=\"ALL\"\r\n") - 1);
+	atsld_send(tty, "AT+CMGL=\"ALL\"\r\n", STRLEN("AT+CMGL=\"ALL\"\r\n"));
 
 	return atsld_wait(ats);
 }
+
+
 
 /**
  * Go fetch for gsm device pending new sms
@@ -543,7 +591,7 @@ static inline int atsld_new_sms_sync(struct tty_struct *tty,
 	if((ats->ats_smsbox.atsrb_state & ATSRB_SMS_SYNC) != 0)
 		return 0;
 
-	atsld_send(tty, "AT", sizeof("AT") - 1);
+	atsld_send(tty, "AT", STRLEN("AT"));
 
 	while(!list_empty(&ats->ats_smsbox.atsrb_cmdlist)) {
 		ac = list_first_entry(&ats->ats_smsbox.atsrb_cmdlist,
@@ -556,10 +604,12 @@ static inline int atsld_new_sms_sync(struct tty_struct *tty,
 	}
 
 	ats->ats_state = ATSMS_STATE_RMSG;
-	atsld_send(tty, "\r\n", sizeof("\r\n") - 1);
+	atsld_send(tty, "\r\n", STRLEN("\r\n"));
 
 	return atsld_wait(ats);
 }
+
+
 
 /**
  * Send a msg by writing AT commands to the tty
@@ -587,11 +637,12 @@ static int atsld_sendsms(struct tty_struct *tty, char const *num,
 		}
 	}
 
-    /* Send AT+CMGS="+xxxxxxxxxx"\r\n to gsm */
-    atsld_send(tty, "AT+CMGS=\"", sizeof("AT+CMGS=\"") - 1);
-	atsld_send(tty, num, strlen(num));
+	/* Send AT+CMGS="+xxxxxxxxxx"\r\n to gsm */
+	/* XXX need synchronization ? */
 	ats->ats_state = ATSMS_STATE_NUM;
-	atsld_send(tty, "\"\r\n", sizeof("\"\r\n") - 1);
+	atsld_send(tty, "AT+CMGS=\"", STRLEN("AT+CMGS=\""));
+	atsld_send(tty, num, strlen(num));
+	atsld_send(tty, "\"\r\n", STRLEN("\"\r\n"));
 
 	res = atsld_wait(ats);
 	if(res < 0)
@@ -609,6 +660,46 @@ static int atsld_sendsms(struct tty_struct *tty, char const *num,
 		ATSMSLD_DBGMSG("MSG SENT\n");
 	return res;
 }
+
+
+
+/**
+ * Send a sim pin code by writing AT commands to the tty
+ */
+static int atsld_sendpin(struct tty_struct *tty, char const *pin, size_t len)
+{
+	struct atsms *ats = tty->disc_data;
+	int res;
+
+	/* TODO Wait state OK change following to ATSMS_STATE_INIT */
+
+	if(ats->ats_state != ATSMS_STATE_OK) {
+		res = atsld_conntest(tty, ats);
+		if(res != 0) {
+			return res;
+		}
+	}
+
+	if(ats->ats_mode != ATSMS_MODE_SMSTEXT) {
+		res = atsld_mode_smstext(tty, ats);
+		if(res != 0) {
+			return res;
+		}
+	}
+
+	ATSMSLD_DBGMSG("Sending simpin\n");
+
+	/* Send AT+CPIN="xxxxxxxxxx"\r\n to gsm */
+	/* XXX need synchronization ? */
+	ats->ats_state = ATSMS_STATE_PIN;
+	atsld_send(tty, "AT+CPIN=\"", STRLEN("AT+CPIN=\""));
+	atsld_send(tty, pin, len);
+	atsld_send(tty, "\"\r\n", STRLEN("\"\r\n"));
+
+	return atsld_wait(ats);
+}
+
+
 
 /**
  * TTY Openning method for atsms line discipline
@@ -634,6 +725,8 @@ static int atsld_open(struct tty_struct *tty)
 
 	return 0;
 }
+
+
 
 /**
  * TTY Closing method for atsms line discipline
@@ -671,6 +764,8 @@ static void atsld_close(struct tty_struct *tty)
 	tty->disc_data = NULL;
 }
 
+
+
 /**
  * TTY Receiving buffer method for atsms line discipline
  */
@@ -698,12 +793,15 @@ static void atsld_receive_buf(struct tty_struct *tty, unsigned char const *cp,
 	}
 }
 
+
+
 /**
  * TTY Asynchrone write method for atsms line discipline
  */
 static void atsld_write_wakeup(struct tty_struct *tty)
 {
 }
+
 
 
 /**
@@ -772,17 +870,17 @@ end:
 	return ret;
 }
 
+
+
 /**
- * TTY Writting method for atsms line discipline
+ * This parse the sms the user want to send
  */
-static ssize_t atsld_write(struct tty_struct *tty, struct file *f,
-		unsigned char const * buf, size_t size)
+static inline ssize_t atsld_write_sms(struct tty_struct *tty,
+		unsigned char const *buf, size_t size)
 {
 	char msg[ATS_MSGLEN];
 	char *num, *sms;
 	int ret;
-
-	ATSMSLD_DBGMSG("TTY write method called\n");
 
 	if(size < ATS_NUMLEN + 1) {
 		ATSMSLD_ERRMSG("Sms is too short\n");
@@ -805,12 +903,34 @@ static ssize_t atsld_write(struct tty_struct *tty, struct file *f,
 	num = msg;
 	sms = msg + ATS_NUMLEN + 1;
 
-	ret = atsld_sendsms(tty, num, sms, size - ATS_NUMLEN - 1);
-	if(ret < 0)
-		return ret;
-
-	return size;
+	return atsld_sendsms(tty, num, sms, size - ATS_NUMLEN - 1);
 }
+
+
+
+/**
+ * TTY Writting method for atsms line discipline
+ */
+static ssize_t atsld_write(struct tty_struct *tty, struct file *f,
+		unsigned char const *buf, size_t size)
+{
+	size_t pinlen = STRLEN("PIN=");
+	ssize_t ret;
+
+	ATSMSLD_DBGMSG("TTY write method called\n");
+
+	if((size > pinlen) && (memcmp(buf, "PIN=", pinlen) == 0))
+		ret = atsld_sendpin(tty, buf + pinlen, size - pinlen);
+	else
+		ret = atsld_write_sms(tty, buf, size);
+
+	if(ret >= 0)
+		ret = size;
+
+	return ret;
+}
+
+
 
 /**
  * TTY flush buffer method for atsms line discipline
@@ -819,6 +939,8 @@ static void atsld_flush_buffer(struct tty_struct *tty)
 {
 }
 
+
+
 /**
  * TTY char in buffer method for atsms line discipline
  */
@@ -826,6 +948,8 @@ static ssize_t atsld_chars_in_buffer(struct tty_struct *tty)
 {
 	return 0;
 }
+
+
 
 /* Line discipline for tty */
 struct tty_ldisc_ops tty_ldisc_sms = {
@@ -841,6 +965,8 @@ struct tty_ldisc_ops tty_ldisc_sms = {
 	.receive_buf     = atsld_receive_buf,
 	.write_wakeup    = atsld_write_wakeup
 };
+
+
 
 
 int atsld_init(void)
@@ -861,6 +987,8 @@ int atsld_init(void)
 EXPORT_SYMBOL(atsld_init);
 
 
+
+
 void atsld_exit(void)
 {
 	int error;
@@ -874,3 +1002,5 @@ void atsld_exit(void)
 
 }
 EXPORT_SYMBOL(atsld_exit);
+
+

@@ -23,22 +23,9 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-/**
- * New sms notification : 
- *
- * AT+CNMI?
- * +CNMI: 2,1,0,0,0 -> Wait for TE link ready and flush messages
- *
- * OK
- *
- * +CMTI: "SM",4 -> Notification message is at index 4 of sim
- * AT+CMGR=4 -> get message at index 4
- * +CMGR: "REC UNREAD","+33686108660","","14/01/27,21:25:54+04"
- * Prout 
- *
- * OK
- */
+#define PIN 1234
 
+#define STRLEN(s) (sizeof(s) - 1)
 
 static volatile int cont = 1;
 static int pf[2];
@@ -173,13 +160,15 @@ static inline void rcv_cmd(int fd, struct sms_storage *sto, char *cmd)
 	char buf[256];
 	size_t i, idx;
 	int len;
+	unsigned int pin;
+	static int pinok = 0;
 
 	if(strcmp(cmd, "\r\n") == 0) {
 		DBGMSG("Respond to connection test AT command...\n");
-		write(fd, "OK\r\n", sizeof("OK\r\n") - 1);
+		write(fd, "OK\r\n", STRLEN("OK\r\n"));
 	} else if(strcmp(cmd, "+CMGF=1\r\n") == 0) {
 		DBGMSG("Pass into sms text mode...\n");
-		write(fd, "OK\r\n", sizeof("OK\r\n") - 1);
+		write(fd, "OK\r\n", STRLEN("OK\r\n"));
 	} else if(sscanf(cmd, "+CMGS=\"%s\"\r\n", num) == 1) {
 		DBGMSG("Prepare new sms for number %12s...\n", num);
 		newsms = 1;
@@ -194,14 +183,41 @@ static inline void rcv_cmd(int fd, struct sms_storage *sto, char *cmd)
 			write(fd, buf, len);
 		}
 		DBGMSG("Ending sms list...\n");
-		write(fd, "OK\r\n", sizeof("OK\r\n") - 1);
+		write(fd, "OK\r\n", STRLEN("OK\r\n"));
 	} else if(sscanf(cmd, "+CMGR=%zu", &idx) == 1) {
 		DBGMSG("Trying to send sms at index %zu...\n", idx);
 		len = sms_storage_get(sto, idx, buf, 256);
 		if(len > 0) {
 			DBGMSG("\tOne sms found, sending...\n");
 			write(fd, buf, len);
-			write(fd, "OK\r\n", sizeof("OK\r\n") - 1);
+			write(fd, "OK\r\n", STRLEN("OK\r\n"));
+		}
+	} else if(strcmp(cmd, "+CPIN?\r\n") == 0) {
+		if(pinok) {
+			write(fd, "+CPIN: READY\r\n",
+					STRLEN("+CPIN: READY\r\n"));
+		} else if(pinok > -3) {
+			write(fd, "+CPIN: SIM PIN\r\n",
+					STRLEN("+CPIN: SIM PIN\r\n"));
+		} else {
+			write(fd, "+CPIN: SIM PUK\r\n",
+					STRLEN("+CPIN: SIM PUK\r\n"));
+		}
+		write(fd, "OK\r\n", STRLEN("OK\r\n"));
+	} else if(sscanf(cmd, "+CPIN=\"%u\"\r\n", &pin) == 1) {
+		if(pinok == 1) {
+			DBGMSG("Responding PIN already OK...\n");
+			write(fd, "+CME ERROR: ready\r\n",
+					STRLEN("+CME ERROR: ready\r\n"));
+		} else if(pin == PIN) {
+			DBGMSG("Responding PIN OK...\n");
+			write(fd, "OK\r\n", STRLEN("OK\r\n"));
+			pinok = 1;
+		} else {
+			DBGMSG("Responding PIN KO...\n");
+			write(fd, "+CME ERROR: bad pin\r\n",
+					STRLEN("+CME ERROR: bad pin\r\n"));
+			--pinok;
 		}
 	} else {
 		printf("Unknow command : %s\n", cmd);
@@ -224,18 +240,18 @@ static void rcv_msg(int fd, struct sms_storage *sto)
 		printf("Sending sms to %s : %s\n", num, rcv);
 		if(strchr(rcv, 26) != NULL) {
 			newsms = 0;
-			write(fd, "OK\r\n", sizeof("OK\r\n") - 1);
+			write(fd, "OK\r\n", STRLEN("OK\r\n"));
 		}
 		return;
 	}
 
-	if(n < sizeof("AT\r\n") - 1)
+	if(n < STRLEN("AT\r\n"))
 		return;
 
-	if(strncmp(rcv, "AT", sizeof("AT") - 1) != 0)
+	if(strncmp(rcv, "AT", STRLEN("AT")) != 0)
 		return;
 
-	if(strncmp(rcv + n - 2, "\r\n", sizeof("\r\n") - 1) != 0)
+	if(strncmp(rcv + n - 2, "\r\n", STRLEN("\r\n")) != 0)
 		return;
 
 

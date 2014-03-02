@@ -10,6 +10,10 @@
 #define N_ATSMS 25
 
 #define SMS "+33666666666\nHey buddy boy whatsup"
+#define BADPIN "PIN=121221"
+#define GOODPIN "PIN=1234"
+
+#define STRLEN(s) (sizeof(s) - 1)
 
 char SMSDELIM[2] = {26};
 
@@ -55,15 +59,27 @@ int main(int argc, char **argv)
 
 	sleep(3);
 
+	printf("----> Test bad pin : ");
+		if(write(fd, BADPIN, STRLEN(BADPIN)) < 0)
+			printf("[OK]\n");
+		else
+			printf("[FAILED]\n");
+
+	printf("----> Test good pin :");
+		if(write(fd, GOODPIN, STRLEN(GOODPIN)) > 0)
+			printf("[OK]\n");
+		else
+			printf("[FAILED]\n");
+
 	printf("----> Sending sms test:\n");
 
-	if(write(fd, SMS, sizeof(SMS) - 1) < 0)
+	if(write(fd, SMS, STRLEN(SMS)) < 0)
 		perror("SMS sending error");
 
 
 	printf("----> Reading stored sms test:\n");
 
-	if(read(fd, rcv, sizeof(rcv) - 1) < 0)
+	if(read(fd, rcv, STRLEN(rcv)) < 0)
 		perror("SMS receiving error");
 	else {
 		parse = strtok(rcv, SMSDELIM);
@@ -78,7 +94,7 @@ int main(int argc, char **argv)
 
 	printf("----> Reading new incoming sms test:\n");
 	/* Wait for incoming sms */
-	if(read(fd, rcv, sizeof(rcv) - 1) < 0)
+	if(read(fd, rcv, STRLEN(rcv)) < 0)
 		perror("SMS receiving error");
 	else {
 		parse = strtok(rcv, SMSDELIM);
@@ -91,7 +107,7 @@ int main(int argc, char **argv)
 
 	printf("----> Reading new incoming sms test n2:\n");
 	/* Wait for incoming sms */
-	if(read(fd, rcv, sizeof(rcv) - 1) < 0)
+	if(read(fd, rcv, STRLEN(rcv)) < 0)
 		perror("SMS receiving error");
 	else {
 		parse = strtok(rcv, SMSDELIM);
