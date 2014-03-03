@@ -880,7 +880,6 @@ static inline ssize_t atsld_write_sms(struct tty_struct *tty,
 {
 	char msg[ATS_MSGLEN];
 	char *num, *sms;
-	int ret;
 
 	if(size < ATS_NUMLEN + 1) {
 		ATSMSLD_ERRMSG("Sms is too short\n");
