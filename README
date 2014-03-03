@@ -5,6 +5,8 @@ atdriver
 atdriver is a linux kernel driver and tty line discipline that sends and
 receives sms over AT commands.
 
+XXX : This is still in development, so to be used with caution
+
 Build
 =====
 
